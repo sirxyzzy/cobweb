@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate log;
 
-use std::mem::align_of_val;
-
 use anyhow::Result;
 use argh::FromArgs;
 
@@ -21,9 +19,8 @@ fn get_text_part(node: ElementRef, index: usize) -> Option<&str> {
 }
 
 #[derive(FromArgs)]
-/// Cobweb, a CLI for PrepMod, you can use this to quickly pull lists of clinics with
-/// available reservations (according to PrepMod), by default it filters out clinics
-/// with no open slots. For clinics that present a reservations link, show it
+/// Cobweb, a screen scraper for PrepMod (https://www.maimmunizations.org)
+///
 struct Args {
     /// show all clinics, even those with no availability
     #[argh(switch, short = 'a')]
@@ -34,6 +31,7 @@ struct Args {
     from: Option<String>,
 }
 
+/// We collect info we scrape in these records
 struct ClinicInfo {
     pub name: String,
     pub date: Option<String>,
@@ -68,6 +66,10 @@ fn main() -> Result<()> {
         .redirect(Policy::none())
         .build()?;
 
+    let base_url = "https://www.maimmunizations.org";
+
+    println!("Searching {}", base_url);
+
     let mut page_number = 0;
 
     let mut infos: Vec<ClinicInfo> = Vec::new();
@@ -78,8 +80,6 @@ fn main() -> Result<()> {
         let page_number_string = page_number.to_string();
 
         trace!("Fetching page {}", page_number_string);
-
-        let base_url = "https://www.maimmunizations.org";
 
         // Our main starting in point is the search page
         let search_url = format!("{}/clinic/search", base_url);
@@ -187,9 +187,12 @@ fn main() -> Result<()> {
         if clinic.has_availability() {
             clinics_with_availability += 1;
             let a = clinic.availability.unwrap();
-            let c = clinic.registration_url.unwrap_or_default();
 
-            println!("{} has {} available {}", clinic.name, a, c)
+            println!("{} has {} available", clinic.name, a);
+            if let Some(url) = clinic.registration_url {
+                println!("Register at {}", url);
+                println!(); // Extra newline to improve layout
+            }
         } else if args.all {
             // Only print this if they specify --all
             println!("{} has no availability", clinic.name)

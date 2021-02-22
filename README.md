@@ -1,28 +1,49 @@
-Cobweb is a screen scraper, this is very early code, more a proof of concept, but as
-with all the very best proofs of concept, it still provides some value.
+Cobweb is a command line oriented screen scraper, this is very early code, more a proof of concept,
+but as with all the very best proofs of concept, it still provides some value.
+
+I was inspired by the awesome pages at https://www.macovidvaccines.com/, which provide a much
+more glossy and user friendly way of presenting this data.
 
 The tool targets the Massachusetts Department of Health web site, which handles reservations for
-obtaining vaccination against Covid-19, the application does nothing https://www.maimmunizations.org/clinic/search cannot do, but it does avoid paging through results and is a LOT quicker than querying by hand
+obtaining vaccination against Covid-19. Cobweb does nothing that the official 
+https://www.maimmunizations.org/clinic/search cannot do, but it does avoid paging
+through results so is a lot quicker than querying by hand.
 
-Just run from the command line, with no parameters to see a list of clinics that advertise availability and if available, a link for reservation...
+## Disclaimer
+
+This program is not affiliated with or endorsed by the Commonwealth of Massachusetts.
+The information may not be complete or accurate. It may break without prior warning,
+it may offend those of a sensitive disposition, or curdle fresh milk, whether it works at
+all depends on the underlying web site, and remember, it's only code!
+
+## Using Cobweb
+
+Run from the command line, with no parameters to see a list of clinics that advertise availability and if available, a link for reservation...
 
 For example:
 
-    ~\dev\cobweb [main +5 ~0 -0 !]> .\target\release\cobweb.exe
-    Worcester Senior Center on 02/22/2021 has 40 available
-    Gillette Stadium on 02/25/2021 has 1 available https://www.maimmunizations.org/client/registration?clinic_id=988
-    Read 5 pages and found 44 clinics, of which 2 have availability
+    > cobweb
+    Searching https://www.maimmunizations.org
+    Worcester Senior Center on 02/22/2021 has 41 available
+    Tree House Deerfield on 02/25/2021 has 1 available
+    Register at https://www.maimmunizations.org/client/registration?clinic_id=2040
 
-The scraper checked 5 pages to collate results, found 44 "clinics" listed, of which only two claimed to have availability, and only Gillette provided a link for registration.
+    Tree House Deerfield on 02/26/2021 has 1 available
+    Register at https://www.maimmunizations.org/client/registration?clinic_id=2041
+    
+    Read 5 pages and found 44 clinics, of which 3 have availability
 
-You can list all the clinics found, including those with no availability using the -a option, or list from some future date onwards, using the -f option.
+The scraper saves time by checking multiple pages to collate the results
 
-To list all the options, run with --help
+You can list all the clinics found, even those with no availability using the -a option, or list from some future date onwards, using the -f option, which can be useful as no more than 50 results can come back at
+any one time.
 
-    ~\dev\cobweb [main +5 ~0 -0 !]> .\target\release\cobweb.exe --help
+To list all the options, run with the --help flag
+
+    > cobweb --help
     Usage: cobweb.exe [-a] [-f <from>]
 
-    Cobweb, a CLI for PrepMod
+    Cobweb, a screen scraper for PrepMod (https://www.maimmunizations.org)
 
     Options:
     -a, --all         show all clinics, even those with no availability
