@@ -24,14 +24,16 @@ For example:
 
     > cobweb
     Searching https://www.maimmunizations.org
+
     Worcester Senior Center on 02/22/2021 has 41 available
+    
     Tree House Deerfield on 02/25/2021 has 1 available
     Register at https://www.maimmunizations.org/client/registration?clinic_id=2040
 
     Tree House Deerfield on 02/26/2021 has 1 available
     Register at https://www.maimmunizations.org/client/registration?clinic_id=2041
 
-    Read 5 pages and found 44 clinics, of which 3 have availability
+    Found 44 clinics, 3 with availability (fetched 5 pages)
 
 The scraper saves time by checking multiple pages to collate the results
 
