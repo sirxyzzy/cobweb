@@ -29,6 +29,10 @@ struct Args {
     /// start search from a date, for example, -f 2021-02-25
     #[argh(option, short = 'f')]
     from: Option<String>,
+
+    /// filter results by name, for example, -n gillette
+    #[argh(option, short = 'n')]
+    name: Option<String>,
 }
 
 /// We collect info we scrape in these records
@@ -57,10 +61,13 @@ fn main() -> Result<()> {
     let args: Args = argh::from_env();
 
     // Yes, we REALLY should validate this data,
-    // We want either an empty query string, that
-    // will get up to the first 50 records, or a validly formatted
+    // Add some of the available query parameters
+
     // date such as 2021-02-25
     let date = args.from.unwrap_or_default();
+
+    // clinic name such as gillette
+    let venue_name = args.name.unwrap_or_default();
 
     let client = reqwest::blocking::Client::builder()
         .redirect(Policy::none())
@@ -69,6 +76,7 @@ fn main() -> Result<()> {
     let base_url = "https://www.maimmunizations.org";
 
     println!("Searching {}", base_url);
+    println!(); // Extra newline to improve layout
 
     let mut page_number = 0;
 
@@ -89,7 +97,7 @@ fn main() -> Result<()> {
             .query(&[
                 ("location", ""),
                 ("search_radius", "All"),
-                ("q[venue_search_name_or_venue_name_i_cont]", ""),
+                ("q[venue_search_name_or_venue_name_i_cont]", &venue_name),
                 ("q[clinic_date_gteq]", &date),
                 ("q[vaccinations_name_i_cont]", ""),
                 ("commit", "Search"),
@@ -191,20 +199,20 @@ fn main() -> Result<()> {
             println!("{} has {} available", clinic.name, a);
             if let Some(url) = clinic.registration_url {
                 println!("Register at {}", url);
-                println!(); // Extra newline to improve layout
             }
+            println!(); // Extra newline to improve layout
         } else if args.all {
             // Only print this if they specify --all
             println!("{} has no availability", clinic.name)
         }
     }
 
-    // Follow with summary
+    // Statistics
     println!(
-        "Read {} pages and found {} clinics, of which {} have availability",
-        page_number - 1,
+        "Found {} clinics, {} with availability (fetched {} pages)",
         clinics,
-        clinics_with_availability
+        clinics_with_availability,
+        page_number - 1
     );
 
     Ok(())

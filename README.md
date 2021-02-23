@@ -30,7 +30,7 @@ For example:
 
     Tree House Deerfield on 02/26/2021 has 1 available
     Register at https://www.maimmunizations.org/client/registration?clinic_id=2041
-    
+
     Read 5 pages and found 44 clinics, of which 3 have availability
 
 The scraper saves time by checking multiple pages to collate the results
@@ -40,12 +40,3 @@ any one time.
 
 To list all the options, run with the --help flag
 
-    > cobweb --help
-    Usage: cobweb.exe [-a] [-f <from>]
-
-    Cobweb, a screen scraper for PrepMod (https://www.maimmunizations.org)
-
-    Options:
-    -a, --all         show all clinics, even those with no availability
-    -f, --from        start search from a date, for example, -f 2021-02-25
-    --help            display usage information
