@@ -1,8 +1,13 @@
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate lazy_static;
+
 use anyhow::Result;
 use argh::FromArgs;
+
+use regex::Regex;
 
 use flexi_logger::Logger;
 use scraper::{ElementRef, Html, Selector};
@@ -49,6 +54,63 @@ impl ClinicInfo {
         match &self.availability {
             Some(a) => a != "0",
             None => false,
+        }
+    }
+
+    pub fn report(&self, all: bool) {
+        if self.has_availability() {
+            if let Some(avail) = &self.availability {
+                println!("{} has {} available", self.name_and_date(), avail);
+            }
+
+            if let Some(url) = &self.registration_url {
+                println!("Register at {}", url);
+            }
+
+            println!(); // Extra newline to improve layout
+        } else if all {
+            println!("{} has no availability", self.name_and_date())
+        }
+    }
+
+    pub fn name_and_date(&self) -> String {
+        match &self.date {
+            Some(d) => format!("{} on {}", self.name, d),
+            None => self.name.clone(),
+        }
+    }
+
+    pub fn new(name_str: &str, availability: Option<&str>) -> ClinicInfo {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"^(.*) on (\d\d/\d\d/\d\d\d\d)$").unwrap();
+        }
+
+        let availability = availability.map(|s| s.to_string());
+
+        match RE.captures(name_str) {
+            Some(caps) => {
+                // We have name and date
+                let name = &caps[1];
+                let date_str = &caps[2];
+
+                ClinicInfo {
+                    name: name.to_string(),
+                    date: Some(date_str.to_string()),
+                    availability,
+                    clinic_id: None,
+                    registration_url: None,
+                }
+            }
+            None => {
+                // Just a name (never seen?)
+                ClinicInfo {
+                    name: name_str.to_string(),
+                    date: None,
+                    availability,
+                    clinic_id: None,
+                    registration_url: None,
+                }
+            }
         }
     }
 }
@@ -176,13 +238,14 @@ fn main() -> Result<()> {
             }
 
             if let Some(name) = maybe_name {
-                infos.push(ClinicInfo {
-                    name: name.to_string(),
-                    date: None,
-                    availability: availability.map(|s| s.to_string()),
-                    clinic_id: None,
-                    registration_url,
-                });
+                // infos.push(ClinicInfo {
+                //     name: name.to_string(),
+                //     date: None,
+                //     availability: availability.map(|s| s.to_string()),
+                //     clinic_id: None,
+                //     registration_url,
+                // });
+                infos.push(ClinicInfo::new(name, availability))
             }
         }
     }
@@ -191,21 +254,11 @@ fn main() -> Result<()> {
     let clinics = infos.len();
 
     // Report on results
-    for clinic in infos {
-        if clinic.has_availability() {
-            clinics_with_availability += 1;
-            let a = clinic.availability.unwrap();
-
-            println!("{} has {} available", clinic.name, a);
-            if let Some(url) = clinic.registration_url {
-                println!("Register at {}", url);
-            }
-            println!(); // Extra newline to improve layout
-        } else if args.all {
-            // Only print this if they specify --all
-            println!("{} has no availability", clinic.name)
-        }
+    for clinic in &infos {
+        clinic.report(args.all);
     }
+
+    let clinics_with_availability = infos.iter().filter(|c| c.has_availability()).count();
 
     // Statistics
     println!(

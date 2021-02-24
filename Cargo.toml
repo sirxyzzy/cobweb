@@ -5,10 +5,12 @@ name = "cobweb"
 version = "0.1.0"
 [dependencies]
 anyhow = "*"
+argh = "*"
 flexi_logger = "*"
 log = "*"
+regex = "*"
 scraper = "*"
-argh = "*"
+lazy_static = "*"
 
 [dependencies.reqwest]
 features = ["blocking"]
