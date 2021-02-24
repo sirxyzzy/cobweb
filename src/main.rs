@@ -80,37 +80,36 @@ impl ClinicInfo {
         }
     }
 
-    pub fn new(name_str: &str, availability: Option<&str>) -> ClinicInfo {
+    pub fn new(
+        name_and_date_str: &str,
+        availability: Option<&str>,
+        clinic_id: Option<&str>,
+        registration_url: Option<&str>,
+    ) -> ClinicInfo {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"^(.*) on (\d\d/\d\d/\d\d\d\d)$").unwrap();
         }
 
-        let availability = availability.map(|s| s.to_string());
+        // We look at the name string, apply a regex, to see if a date is embedded
+        // if so, we split the name, and grab the date
+        let name;
+        let date;
 
-        match RE.captures(name_str) {
-            Some(caps) => {
-                // We have name and date
-                let name = &caps[1];
-                let date_str = &caps[2];
+        if let Some(caps) = RE.captures(name_and_date_str) {
+            // We have name and date
+            name = caps[1].to_string();
+            date = Some(caps[2].to_string());
+        } else {
+            name = name_and_date_str.to_string();
+            date = None;
+        }
 
-                ClinicInfo {
-                    name: name.to_string(),
-                    date: Some(date_str.to_string()),
-                    availability,
-                    clinic_id: None,
-                    registration_url: None,
-                }
-            }
-            None => {
-                // Just a name (never seen?)
-                ClinicInfo {
-                    name: name_str.to_string(),
-                    date: None,
-                    availability,
-                    clinic_id: None,
-                    registration_url: None,
-                }
-            }
+        ClinicInfo {
+            name,
+            date,
+            availability: availability.map(|s| s.to_string()),
+            clinic_id: clinic_id.map(|s| s.to_string()),
+            registration_url: registration_url.map(|s| s.to_string()),
         }
     }
 }
@@ -198,59 +197,18 @@ fn main() -> Result<()> {
         for element in document.select(&clinics_selector) {
             // println!("{:#?}", element.value());
 
-            // Get the NAME
-            let mut maybe_name: Option<&str> = None;
-            // The select is too generous, so use .next() to get just the first
-            if let Some(name) = element.select(&name_selector).next() {
-                if let Some(text) = name.text().next() {
-                    maybe_name = Some(text.trim());
-                }
-            }
-
-            let mut availability: Option<&str> = None;
-
-            // Get the availabilities, our selector returns ALL property labels
-            // So we match text in code, then look to the parent for the value
-            for label in element.select(&avail_selector) {
-                //
-                let text = get_text(label);
-                if text.starts_with("Available Appointments") {
-                    let parent = ElementRef::wrap(label.parent().unwrap()).unwrap();
-
-                    if let Some(a) = get_text_part(parent, 1) {
-                        availability = Some(a.trim())
-                    }
-                }
-            }
-
-            let mut registration_url = None;
-
-            for schedule_link in element.select(&schedule_selector) {
-                let href = schedule_link.value().attr("href");
-
-                if let Some(href) = href {
-                    let label = get_text(schedule_link);
-
-                    trace!(">>>>> {} {}{}", label.trim(), base_url, href);
-
-                    registration_url = Some(format!("{}{}", base_url, href));
-                }
-            }
-
-            if let Some(name) = maybe_name {
-                // infos.push(ClinicInfo {
-                //     name: name.to_string(),
-                //     date: None,
-                //     availability: availability.map(|s| s.to_string()),
-                //     clinic_id: None,
-                //     registration_url,
-                // });
-                infos.push(ClinicInfo::new(name, availability))
+            if let Some(clinic) = scrape_clinic(
+                element,
+                base_url,
+                &name_selector,
+                &avail_selector,
+                &schedule_selector,
+            ) {
+                infos.push(clinic);
             }
         }
     }
 
-    let mut clinics_with_availability = 0;
     let clinics = infos.len();
 
     // Report on results
@@ -269,4 +227,68 @@ fn main() -> Result<()> {
     );
 
     Ok(())
+}
+
+/// Given a DOM element try to scrape the information we need for a clinic
+fn scrape_clinic(
+    element: ElementRef,
+    base_url: &str,
+    name_selector: &Selector,
+    avail_selector: &Selector,
+    schedule_selector: &Selector,
+) -> Option<ClinicInfo> {
+    // We have to have at least a name...
+
+    // The select is too generous, so use .next() to get just the first
+    if let Some(name) = element.select(name_selector).next() {
+        if let Some(text) = name.text().next() {
+            let name = text.trim();
+
+            // without a name, we cannot make use of this, but report this
+            // as likely the page has changed in a way we do not expect
+            if name.is_empty() {
+                error!("Should have got a name for a clinic!");
+                return None;
+            }
+
+            let mut availability: Option<&str> = None;
+
+            // Get the availabilities, our selector returns ALL property labels
+            // So we match text in code, then look to the parent for the value
+            for label in element.select(&avail_selector) {
+                //
+                let text = get_text(label);
+                if text.starts_with("Available Appointments") {
+                    let parent = ElementRef::wrap(label.parent().unwrap()).unwrap();
+
+                    if let Some(a) = get_text_part(parent, 1) {
+                        availability = Some(a.trim())
+                    }
+                }
+            }
+
+            let mut registration_url: Option<String> = None;
+
+            for schedule_link in element.select(&schedule_selector) {
+                let href = schedule_link.value().attr("href");
+
+                if let Some(href) = href {
+                    let label = get_text(schedule_link);
+
+                    trace!(">>>>> {} {}{}", label.trim(), base_url, href);
+
+                    registration_url = Some(format!("{}{}", base_url, href));
+                }
+            }
+
+            return Some(ClinicInfo::new(
+                name,
+                availability,
+                None,
+                registration_url.as_deref(),
+            ));
+        }
+    }
+
+    None
 }
