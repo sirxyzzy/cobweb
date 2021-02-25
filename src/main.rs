@@ -182,6 +182,22 @@ fn main() -> Result<()> {
 
         let document = Html::parse_document(&raw);
 
+        let title_selector = Selector::parse("head > title").unwrap();
+
+        // let mut title = None;
+        if let Some(title_elem) = document.select(&title_selector).next() {
+            if let Some(text) = title_elem.text().next() {
+                let title = text.trim();
+
+                println!("Title is {}", title);
+
+                if title == "Commonwealth of Massachusetts Virtual Waiting Room" {
+                    println!("Bailing cus we hit the waiting room!");
+                    break;
+                }
+            }
+        }
+
         let clinics_selector = Selector::parse(
         "body > div.main-container > div.mt-24.border-t.border-gray-200 > div.md\\:flex > div.md\\:flex-shrink",
         )
@@ -195,8 +211,6 @@ fn main() -> Result<()> {
         let schedule_selector = Selector::parse("p > a").unwrap();
 
         for element in document.select(&clinics_selector) {
-            // println!("{:#?}", element.value());
-
             if let Some(clinic) = scrape_clinic(
                 element,
                 base_url,
