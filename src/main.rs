@@ -206,7 +206,7 @@ fn main() -> Result<()> {
                 if title == "Commonwealth of Massachusetts Virtual Waiting Room" {
                     if let Some(summary_elem) = document.select(&summary_selector).next() {
                         if let Some(text) = summary_elem.text().next() {
-                            println!("{}", text.trim());
+                            println!("Waiting room: {}", text.trim());
                         }
                     }
 
