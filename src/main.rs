@@ -236,7 +236,11 @@ fn main() -> Result<()> {
                     if prev_waiting_message != Some(text.clone()) {
                         println!();
                         let local: DateTime<Local> = Local::now();
-                        println!("{} Waiting room: {}", local.to_rfc3339(), text.trim());
+                        println!(
+                            "{} Waiting room: {}",
+                            local.to_rfc3339_opts(SecondsFormat::Secs, true),
+                            text.trim()
+                        );
                         prev_waiting_message = Some(text);
                     } else {
                         print!(".");
