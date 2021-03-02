@@ -37,8 +37,11 @@ For example:
 
 The scraper saves time by checking multiple pages to collate the results
 
-You can list all the clinics found, even those with no availability using the -a option, or list from some future date onwards, using the -f option, which can be useful as no more than 50 results can come back at
-any one time.
+You can list all the clinics found, even those with no availability using the -a option, or list from some future date onwards, using the -f option, or filter by site name using -s.
+
+In cases of high load, requests may be routed to a waiting room, normally the
+program will exit, as in this state results cannot immediately be obtained,
+but you can use -w to repeatedly poll, until results are available.
 
 To list all the options, run with the --help flag
 

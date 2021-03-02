@@ -9,6 +9,8 @@ use argh::FromArgs;
 
 use regex::Regex;
 
+use std::{thread, time};
+
 use flexi_logger::Logger;
 use scraper::{ElementRef, Html, Selector};
 
@@ -38,6 +40,10 @@ struct Args {
     /// filter results by name, for example, -n gillette
     #[argh(option, short = 'n')]
     name: Option<String>,
+
+    /// wait in queue, instead of bailing
+    #[argh(switch, short = 'w')]
+    wait: bool,
 }
 
 /// We collect info we scrape in these records
@@ -166,12 +172,15 @@ fn main() -> Result<()> {
             ])
             .send()?;
 
-        if !res.status().is_success() {
-            if !res.status().is_redirection() {
+        let status = res.status();
+
+        trace!("Response status {}", status);
+
+        if !status.is_success() {
+            if !status.is_redirection() {
                 println!(
                     "Page {} fetch failed with unexpected status {}",
-                    page_number_string,
-                    res.status()
+                    page_number_string, status
                 );
             }
 
@@ -184,16 +193,31 @@ fn main() -> Result<()> {
 
         let title_selector = Selector::parse("head > title").unwrap();
 
+        let summary_selector =
+            Selector::parse("#wrapper > main > div > section > section:nth-child(2) > h2").unwrap();
+
         // let mut title = None;
         if let Some(title_elem) = document.select(&title_selector).next() {
             if let Some(text) = title_elem.text().next() {
                 let title = text.trim();
 
-                println!("Title is {}", title);
+                trace!("Title is {}", title);
 
                 if title == "Commonwealth of Massachusetts Virtual Waiting Room" {
-                    println!("Bailing cus we hit the waiting room!");
-                    break;
+                    if let Some(summary_elem) = document.select(&summary_selector).next() {
+                        if let Some(text) = summary_elem.text().next() {
+                            println!("{}", text.trim());
+                        }
+                    }
+
+                    if args.wait {
+                        trace!("Waiting before refresh");
+                        thread::sleep(time::Duration::from_secs(10));
+                        continue;
+                    } else {
+                        println!("Bailing cus we hit the waiting room!");
+                        break;
+                    }
                 }
             }
         }
