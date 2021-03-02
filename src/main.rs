@@ -16,13 +16,26 @@ use scraper::{ElementRef, Html, Selector};
 
 use reqwest::redirect::Policy;
 
-// Simple wrapper to get ALL descendent text from an element
+fn super_trim(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<&str>>().join(" ")
+}
+
+// Simple wrapper to get ALL descendent text from an element squelching
+// embedded newlines
 fn get_text(node: ElementRef) -> String {
-    node.text().collect::<Vec<&str>>().join(" ")
+    let text = node.text().collect::<Vec<&str>>().join(" ");
+    super_trim(&text)
 }
 
 fn get_text_part(node: ElementRef, index: usize) -> Option<&str> {
     node.text().nth(index)
+}
+
+fn get_selected_text(node: ElementRef, selector: &Selector) -> Option<String> {
+    if let Some(elem) = node.select(selector).next() {
+        return Some(get_text(elem));
+    }
+    None
 }
 
 #[derive(FromArgs)]
@@ -198,6 +211,7 @@ fn main() -> Result<()> {
         let raw = res.text()?;
 
         let document = Html::parse_document(&raw);
+        let root = document.root_element();
 
         let title_selector = Selector::parse("head > title").unwrap();
 
@@ -205,27 +219,23 @@ fn main() -> Result<()> {
             Selector::parse("#wrapper > main > div > section > section:nth-child(2) > h2").unwrap();
 
         // let mut title = None;
-        if let Some(title_elem) = document.select(&title_selector).next() {
-            if let Some(text) = title_elem.text().next() {
-                let title = text.trim();
+        if let Some(text) = get_selected_text(root, &title_selector) {
+            let title = text.trim();
 
-                trace!("Title is {}", title);
+            trace!("Title is {}", title);
 
-                if title == "Commonwealth of Massachusetts Virtual Waiting Room" {
-                    if let Some(summary_elem) = document.select(&summary_selector).next() {
-                        if let Some(text) = summary_elem.text().next() {
-                            println!("Waiting room: {}", text.trim());
-                        }
-                    }
+            if title == "Commonwealth of Massachusetts Virtual Waiting Room" {
+                if let Some(text) = get_selected_text(root, &summary_selector) {
+                    println!("Waiting room: {}", text.trim());
+                }
 
-                    if args.wait {
-                        trace!("Waiting before refresh");
-                        thread::sleep(time::Duration::from_secs(10));
-                        continue;
-                    } else {
-                        println!("Bailing cus we hit the waiting room!");
-                        break;
-                    }
+                if args.wait {
+                    trace!("Waiting before refresh");
+                    thread::sleep(time::Duration::from_secs(10));
+                    continue;
+                } else {
+                    println!("Bailing cus we hit the waiting room!");
+                    break;
                 }
             }
         }
