@@ -11,6 +11,7 @@ log = "*"
 regex = "*"
 scraper = "*"
 lazy_static = "*"
+chrono = "*"
 
 [dependencies.reqwest]
 features = ["blocking"]

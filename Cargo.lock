@@ -122,6 +122,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argh",
+ "chrono",
  "flexi_logger",
  "lazy_static",
  "log",

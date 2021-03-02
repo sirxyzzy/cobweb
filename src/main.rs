@@ -14,6 +14,8 @@ use std::{
     thread, time,
 };
 
+use chrono::prelude::*;
+
 use flexi_logger::Logger;
 use scraper::{ElementRef, Html, Selector};
 
@@ -233,7 +235,8 @@ fn main() -> Result<()> {
                 if let Some(text) = get_selected_text(root, &summary_selector) {
                     if prev_waiting_message != Some(text.clone()) {
                         println!();
-                        println!("Waiting room: {}", text.trim());
+                        let local: DateTime<Local> = Local::now();
+                        println!("{} Waiting room: {}", local.to_rfc3339(), text.trim());
                         prev_waiting_message = Some(text);
                     } else {
                         print!(".");
