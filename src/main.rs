@@ -44,6 +44,10 @@ struct Args {
     /// wait in queue, instead of bailing
     #[argh(switch, short = 'w')]
     wait: bool,
+
+    /// show more details, a shortcut for setting RUST_LOG to cobweb=trace
+    #[argh(switch, short = 'v')]
+    verbose: bool,
 }
 
 /// We collect info we scrape in these records
@@ -106,6 +110,10 @@ impl ClinicInfo {
             name = caps[1].to_string();
             date = Some(caps[2].to_string());
         } else {
+            warn!(
+                "Problem getting date from clinic name! {}",
+                name_and_date_str
+            );
             name = name_and_date_str.to_string();
             date = None;
         }
@@ -121,11 +129,11 @@ impl ClinicInfo {
 }
 
 fn main() -> Result<()> {
-    Logger::with_env_or_str("info").start()?;
+    let args: Args = argh::from_env();
+
+    Logger::with_env_or_str(if args.verbose { "cobweb=trace" } else { "info" }).start()?;
 
     trace!("Started");
-
-    let args: Args = argh::from_env();
 
     // Yes, we REALLY should validate this data,
     // Add some of the available query parameters
