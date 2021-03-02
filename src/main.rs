@@ -9,7 +9,10 @@ use argh::FromArgs;
 
 use regex::Regex;
 
-use std::{thread, time};
+use std::{
+    io::{self, Write},
+    thread, time,
+};
 
 use flexi_logger::Logger;
 use scraper::{ElementRef, Html, Selector};
@@ -170,6 +173,8 @@ fn main() -> Result<()> {
 
     let mut infos: Vec<ClinicInfo> = Vec::new();
 
+    let mut prev_waiting_message = None;
+
     loop {
         page_number += 1;
 
@@ -226,7 +231,14 @@ fn main() -> Result<()> {
 
             if title == "Commonwealth of Massachusetts Virtual Waiting Room" {
                 if let Some(text) = get_selected_text(root, &summary_selector) {
-                    println!("Waiting room: {}", text.trim());
+                    if prev_waiting_message != Some(text.clone()) {
+                        println!();
+                        println!("Waiting room: {}", text.trim());
+                        prev_waiting_message = Some(text);
+                    } else {
+                        print!(".");
+                        io::stdout().flush().unwrap();
+                    }
                 }
 
                 if args.wait {
